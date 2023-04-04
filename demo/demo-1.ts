@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-console */
+import { URI } from "../lib/grammar/uri.js";
 import { SimpleUser, SimpleUserDelegate, SimpleUserOptions } from "../lib/platform/web/index.js";
 import { getAudio, getButton, getButtons, getInput, getSpan } from "./demo-utils.js";
 
@@ -16,15 +17,18 @@ const holdCheckbox = getInput("hold");
 const muteCheckbox = getInput("mute");
 
 // WebSocket Server URL
-const webSocketServer = "wss://edge.sip.onsip.com";
+// const webSocketServer = "wss://edge.sip.onsip.com";
+const webSocketServer = "wss://jbz01.myminerva.services";
 serverSpan.innerHTML = webSocketServer;
 
 // Destination URI
-const target = "sip:echo@sipjs.onsip.com";
+const target = "sip:todd@jbz01.myminerva.services:5060";
 targetSpan.innerHTML = target;
 
 // Name for demo user
-const displayName = "SIP.js Demo";
+const displayName = "prash";
+const password = "xxxxxxx";
+const username = new URI("sip", "prash", "jbz01.myminerva.services");
 
 // SimpleUser delegate
 const simpleUserDelegate: SimpleUserDelegate = {
@@ -53,6 +57,10 @@ const simpleUserDelegate: SimpleUserDelegate = {
   onCallHold: (held: boolean): void => {
     console.log(`[${displayName}] Call hold ${held}`);
     holdCheckbox.checked = held;
+  },
+  onCallReceived: async () => {
+    console.log("Incoming Call!");
+    await simpleUser.answer();
   }
 };
 
@@ -60,13 +68,19 @@ const simpleUserDelegate: SimpleUserDelegate = {
 const simpleUserOptions: SimpleUserOptions = {
   delegate: simpleUserDelegate,
   media: {
+    constraints: {
+      audio: true,
+      video: false
+    },
     remote: {
       audio: audioElement
     }
   },
   userAgentOptions: {
     // logLevel: "debug",
-    displayName
+    displayName: displayName,
+    authorizationPassword: password,
+    uri: username
   }
 };
 
@@ -82,10 +96,12 @@ connectButton.addEventListener("click", () => {
   simpleUser
     .connect()
     .then(() => {
-      connectButton.disabled = true;
-      disconnectButton.disabled = false;
-      callButton.disabled = false;
-      hangupButton.disabled = true;
+      simpleUser.register().then(() => {
+        connectButton.disabled = true;
+        disconnectButton.disabled = false;
+        callButton.disabled = false;
+        hangupButton.disabled = true;
+      });
     })
     .catch((error: Error) => {
       connectButton.disabled = false;
